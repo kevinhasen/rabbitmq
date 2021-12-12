@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit
+       http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+<!--        引入外部文件-->
+    <context:property-placeholder location="classpath:rabbit.properties"/>
+<!--
+创建连接工厂
+publisher-confirms="true" 确认模式
+publisher-returns="true"  回退模式
+-->
+    <rabbit:connection-factory id="connectionFactory"
+                               host="${rabbit.host}"
+                               port="${rabbit.port}"
+                               password="${rabbit.password}"
+                               username="${rabbit.username}"
+                               virtual-host="${rabbit.virtual-host}"
+                               publisher-confirms="true"
+                               publisher-returns="true"
+                               />
+
+<!--    rabbit管理,负责增删队列和路由-->
+    <rabbit:admin connection-factory="connectionFactory"/>
+<!--    创建队列-->
+    <rabbit:queue id="queue_confirm" name="queue_confirm"/>
+<!--    创建路由,direct表示转发路由,需要设置路由规则-->
+    <rabbit:direct-exchange name="exchange_confirm">
+        <rabbit:bindings>
+            <rabbit:binding queue="queue_confirm" key="confirm"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+<!--    以下是ttl教程-->
+<!--    设置队列过期时间-->
+    <rabbit:queue name="queue_ttl" id="queue_ttl" >
+<!--        设置参数-->
+        <rabbit:queue-arguments>
+<!--            过期参数是固定格式,值是毫秒单位,值的类型是整数型,需要设置全类名-->
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Integer"></entry>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+<!--    设置交换机,匹配模式-->
+    <rabbit:topic-exchange name="exchange_ttl">
+        <rabbit:bindings>
+<!--            路由规则,#表示任意后缀-->
+            <rabbit:binding pattern="ttl.#" queue="queue_ttl"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+    <!--    以下死信队列教程-->
+<!--    定义正常的交换机和队列,定义收留被抛弃的信息交换机和队列-->
+    <rabbit:queue name="queue_dlx" id="queue_dlx">
+<!--        如果被抛弃的话,路径-->
+        <rabbit:queue-arguments>
+<!--            key固定参数,不可更改-->
+            <entry key="x-dead-letter-exchange" value="exchange_dead_dlx"></entry>
+<!--            死信路由规则,抛弃之后往这发送-->
+            <entry key="x-dead-letter-routing-key" value="dead.dlx.abc"></entry>
+<!--            设置队列长度,超过这个长度将会被抛弃多余的信息-->
+            <entry key="x-max-length" value="10" value-type="java.lang.Integer"></entry>
+<!--            设置过期时间,过期之后将会被抛弃-->
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Integer"></entry>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+    <rabbit:topic-exchange name="exchange_dlx">
+<rabbit:bindings>
+    <rabbit:binding pattern="dlx.#" queue="queue_dlx"></rabbit:binding>
+</rabbit:bindings>
+    </rabbit:topic-exchange>
+
+<!--    死信交换机和队列-->
+    <rabbit:queue name="queue_dead_dlx" id="queue_dead_dlx"></rabbit:queue>
+    <rabbit:topic-exchange name="exchange_dead_dlx">
+        <rabbit:bindings>
+            <rabbit:binding pattern="dead.dlx.#" queue="queue_dead_dlx"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+
+
+    <!--    发送信息模板-->
+    <rabbit:template id="rabbitTemplate" connection-factory="connectionFactory"/>
+</beans>

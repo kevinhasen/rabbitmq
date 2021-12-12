@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit
+       http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+    <!--加载配置文件-->
+    <context:property-placeholder location="classpath:rabbit.properties"/>
+<!--    定义连接工厂-->
+    <rabbit:connection-factory id="connectionFactory"
+                                host="${rabbit.host}"
+                               password="${rabbit.password}"
+                               port="${rabbit.port}"
+                               username="${rabbit.username}"
+                               virtual-host="${rabbit.virtual-host}"
+    />
+<!--    监听队列,简单模式-->
+<!--    <bean class="com.yee.listener.SpringQueueListener" id="listener"/>-->
+    <bean class="com.yee.listener.FanoutListenOne" id="FanoutListenOne"/>
+    <bean class="com.yee.listener.FanoutListenTwo" id="FanoutListenTwo"/>
+<!--    监听器-->
+    <rabbit:listener-container connection-factory="connectionFactory">
+<!--       简单模式 监听哪个类,监听的队列-->
+<!--        <rabbit:listener ref="listener" queue-names="spring_queue"/>-->
+        <rabbit:listener ref="FanoutListenOne" queue-names="spring_fanout_queue1"/>
+        <rabbit:listener ref="FanoutListenTwo" queue-names="spring_fanout_queue2"/>
+    </rabbit:listener-container>
+</beans>

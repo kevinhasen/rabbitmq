@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit
+       http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+    <!--加载配置文件-->
+    <context:property-placeholder location="classpath:rabbit.properties"/>
+<!--    定义连接工厂-->
+    <rabbit:connection-factory id="connectionFactory"
+                                host="${rabbit.host}"
+                               password="${rabbit.password}"
+                               port="${rabbit.port}"
+                               username="${rabbit.username}"
+                               virtual-host="${rabbit.virtual-host}"
+    />
+<!--    定义管理器-->
+    <rabbit:admin connection-factory="connectionFactory"/>
+<!--    定义队列,简单模式-->
+<!--    <rabbit:queue id="spring_queue" name="spring_queue" />-->
+<!--    广播；所有队列都能收到消息,id和name都需要写-->
+    <rabbit:queue id="spring_fanout_queue1" name="spring_fanout_queue1"/>
+    <rabbit:queue id="spring_fanout_queue2" name="spring_fanout_queue2"/>
+<!--    定义交换机-->
+    <rabbit:fanout-exchange id="spring_fanout_exchange" name="spring_fanout_exchange">
+<!--        交换机要和队列绑定-->
+        <rabbit:bindings>
+            <rabbit:binding queue="spring_fanout_queue1"/>
+            <rabbit:binding queue="spring_fanout_queue2"/>
+        </rabbit:bindings>
+    </rabbit:fanout-exchange>
+<!--    定义信息模板-->
+    <rabbit:template id="rabbitTemplate" connection-factory="connectionFactory"/>
+
+
+
+
+
+
+
+
+
+</beans>
